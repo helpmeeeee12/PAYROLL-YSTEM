@@ -79,7 +79,7 @@ int readInt(int low, int high)
     int value;
 
     cin >> value;
-    while (cin.fail() || value < low || value > high)
+    while (cin.fail() || cin.peek() != '\n' || value < low || value > high)
     {
         cin.clear();
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -95,7 +95,7 @@ double readDouble(double low, double high)
     double value;
 
     cin >> value;
-    while (cin.fail() || value < low || value > high)
+    while (cin.fail() || cin.peek() != '\n' || value < low || value > high)
     {
         cin.clear();
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -111,14 +111,15 @@ char readYN()
     char c;
 
     cin>>c;
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    while(cin.fail() || (c!='Y' && c!='y' && c!='N' && c!='n'))
+
+    while(cin.fail() || cin.peek() != '\n' || (c!='Y' && c!='y' && c!='N' && c!='n'))
     {
         cin.clear();
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cout<<"Invalide input. Enter [Y]Yes or [N]No: ";
+        cout<<"Invalid input. Enter [Y]Yes or [N]No: ";
         cin>>c;
     }
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
     return c;
 }
 
@@ -151,7 +152,14 @@ void loadAccounts()//LOADING ACCOUNTS FROM THE FILE
         {
             break;
         }
+
     }
+    if(usercount == 0)  
+    {
+    users[0] = {"admin", "1234", "Admin"};
+    usercount = 1;
+    }
+    
     file.close();
 }
 
@@ -303,29 +311,32 @@ void addEmployee()
             cout<<"\nNAME: ";
             getline(cin, employeeDetails[empcount].name);
         }
-    
+
         do
         {
             exists = false;
-            cout<<"EMPLOYEE ID: ";
-            cin>>employeeDetails[empcount].id;
+            cout << "EMPLOYEE ID: ";
+            getline(cin, employeeDetails[empcount].id);
 
-            for(int i=0; i<empcount; i++)
+            if (employeeDetails[empcount].id.empty() || hasBar(employeeDetails[empcount].id) || employeeDetails[empcount].id.find(' ') != string::npos)
             {
-                if(employeeDetails[empcount].id == employeeDetails[i].id)
-                {
-                    exists = true;
-                }
+                cout << "\nInvalid ID. No spaces or '|'.\n";
+                exists = true;
             }
-            
-            if(exists)
+            else
             {
-                cout<<"\nEmployee ID already exists.";
+                for (int i = 0; i < empcount; i++)
+                {
+                    if (employeeDetails[empcount].id == employeeDetails[i].id)
+                    {
+                        exists = true;
+                        cout << "\nEmployee ID already exists.\n";
+                    }
+                }
             }
         } while (exists);
 
         cout<<"POSITION: ";
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         getline(cin, employeeDetails[empcount].position); 
 
         while(employeeDetails[empcount].position.empty() || hasBar(employeeDetails[empcount].position))
@@ -371,8 +382,6 @@ void addEmployee()
         empcount++;
         saveEmployees(); 
         
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
         return;
 }
 
@@ -980,7 +989,7 @@ void Philhealth(int i)
             savePayroll();
             PagIbig(i);
         }
-        else if (payrollRecords[i].monthlyRate >= 10000.01 && payrollRecords[i].monthlyRate <= 99999.99)
+        else if (payrollRecords[i].monthlyRate < 100000)
         {
             TotalPremium = payrollRecords[i].monthlyRate * 0.05;
             PHEmployeeShare = TotalPremium / 2;
@@ -1146,17 +1155,17 @@ void Regular(int i)
     if(day<=8) //FIRST 8 HOURS OF THE DAY TYPE
     {
         cout<<"\nHow many Days: ";
-        days=readInt(1, 31);
+        days=readInt(1, 16);
 
         addpay = payrollRecords[i].hourlyRate*factors[day]*8;
     }
     else //OVERTIME HOURS
     {
         cout<<"\nOvertime Hours: ";
-        hours=readDouble(0, 24);
+        hours=readDouble(0, 16);
 
         cout<<"\nHow many Overtime Days: ";
-        days=readInt(1, 31);
+        days=readInt(1, 16);
 
         addpay = payrollRecords[i].hourlyRate*factors[day]*hours;
     }
@@ -1271,7 +1280,7 @@ void overtime(int i)
         {
             NightDiff(i);
             cout<<"\nOther Overtime? [Y]Yes or [N]No: ";
-            cin>>ans;
+            ans=readYN();
 
             if(ans=='Y'|| ans=='y')
             {
@@ -1374,28 +1383,10 @@ void adminMenu()
             <<"\n[3] View Employees"
             <<"\n[4] Exit";
         cout<<"\nInput Your Action: ";
-        getline(cin, tempaction);
+        
+        action=readInt(1,4);
 
-        if(tempaction.empty())
-        {
-            cout<<"\nTYPE SOMETHING.";
-            goto ADMIN;
-        }
-                    
-        stringstream ss(tempaction);
-
-        if(!(ss>>action))
-        {
-            cout<<"\nINVALID.";
-            goto ADMIN;
-        }
-                    
-        if(action > 4 || action < 1)
-        {
-            cout<<"\nINVALID.";
-            goto ADMIN;
-        }
-
+        
         switch(action)
         {
             case 1:
@@ -1417,27 +1408,7 @@ void adminMenu()
                     <<"\n[4] Change Password"
                     <<"\n[5] Back";
                 cout<<"\nInput Your next Step: ";
-                getline(cin, tempstep);
-
-                if(tempstep.empty())
-                {
-                    cout<<"\nTYPE SOMETHING.";
-                    goto ACCM;
-                }
-                                                            
-                stringstream ss(tempstep);
-
-                if(!(ss>>step))
-                {
-                    cout<<"\nINVALID.";
-                    goto ACCM;
-                }
-                                                            
-                if(step > 5 || step < 1)
-                {
-                    cout<<"\nINVALID.";
-                    goto ACCM;
-                }
+                step=readInt(1,5);
 
                 switch(step)
                 {
@@ -1686,27 +1657,7 @@ void hrMenu()
             <<"\n[4] Edit Employee Information"
             <<"\n[5] Exit";
         cout<<"\nInput Your Action: ";
-        getline(cin, tempaction);
-
-        if(tempaction.empty())
-        {
-            cout<<"\nTYPE SOMETHING.";
-            goto HR;
-        }
-                    
-        stringstream ss(tempaction);
-
-        if(!(ss>>action))
-        {
-            cout<<"\nINVALID.";
-            goto HR;
-        }
-                    
-        if(action > 5 || action < 1)
-        {
-            cout<<"\nINVALID.";
-            goto HR;
-        }
+        action=readInt(1,5);
 
         switch(action)
         {
@@ -1740,8 +1691,8 @@ void hrMenu()
                             <<"\n______________________________";
 
                         DEL: cout<<"\nAre you sure you want to delete?[Y]Yes or [N]No: ";
-                        cin>>ans;
-                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                        
+                        ans=readYN();
 
                         if(ans=='Y' || ans=='y')
                         {
@@ -1838,6 +1789,12 @@ void hrMenu()
                         {
                             cout<<"\nInput Change: ";
                             getline(cin, newID);
+
+                            if(newID.empty() || hasBar(newID) || newID.find(' ') != string::npos)
+                            {
+                            cout<<"\nInvalid ID. No spaces or '|'.";
+                            goto EDITEMP;
+                            }
 
                             for(int k=0; k<empcount; k++)
                             {
@@ -2012,28 +1969,9 @@ void payoffMenu()
                 <<"\n[3] View Employee Payroll Summary"
                 <<"\n[4] Exit";
             cout<<"\nInput Your Action: ";
-            getline(cin, tempaction);
-
-            if(tempaction.empty())
-            {
-                cout<<"\nTYPE SOMETHING.";
-                goto PAYOFF;
-            }
-                        
-            stringstream ss(tempaction);
-
-            if(!(ss>>action))
-            {
-                cout<<"\nINVALID.";
-                goto PAYOFF;
-            }
-                        
-            if(action > 4 || action < 1)
-            {
-                cout<<"\nINVALID.";
-                goto PAYOFF;
-            }
-
+            
+            action=readInt(1,4);
+           
             switch(action)
             {
                 case 1: //VIEW EMPLOYEE INFORMATION
@@ -2166,27 +2104,7 @@ void accountantMenu()
                 <<"\n[3] View Employee Payroll Summary"
                 <<"\n[4] Exit";
             cout<<"\nInput Your Action: ";
-            getline(cin, tempaction);
-
-            if(tempaction.empty())
-            {
-                cout<<"\nTYPE SOMETHING.";
-                goto ACC;
-            }
-                        
-            stringstream ss(tempaction);
-
-            if(!(ss>>action))
-            {
-                cout<<"\nINVALID.";
-                goto ACC;
-            }
-                        
-            if(action > 4 || action < 1)
-            {
-                cout<<"\nINVALID.";
-                goto ACC;
-            }
+            action=readInt(1,4);
 
             switch(action)
             {
@@ -2323,27 +2241,7 @@ void employeeMenu()
             <<"\n[3] View Payslip"
             <<"\n[4] Exit";
         cout<<"\nInput Your Action: ";
-        getline(cin, tempaction);
-
-        if(tempaction.empty())
-        {
-            cout<<"\nTYPE SOMETHING.";
-            goto EMP;
-        }
-                    
-        stringstream ss(tempaction);
-
-        if(!(ss>>action))
-        {
-            cout<<"\nINVALID.";
-            goto EMP;
-        }
-                    
-        if(action > 4 || action < 1)
-        {
-            cout<<"\nINVALID.";
-            goto EMP;
-        }
+        action=readInt(1,4);
 
         switch(action)
         {
